@@ -42,6 +42,7 @@ const workflowStages = [
 ];
 
 const TAX_RATE = 0.065; // 6.5% Florida
+const LOGO_URL = "https://www.precisiongraphicsco.com/images/nav-logo.jpeg";
 
 export default function App() {
   // --- STATE ---
@@ -50,9 +51,8 @@ export default function App() {
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
   const [fitToScreen, setFitToScreen] = useState(false);
   
-  // Advanced CRM Controls State
   const [crmSearchTerm, setCrmSearchTerm] = useState(''); 
-  const [crmSortRule, setCrmSortRule] = useState('newest'); // 'newest' | 'oldest' | 'name-az' | 'name-za' | 'value-high' | 'value-low'
+  const [crmSortRule, setCrmSortRule] = useState('newest'); 
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -232,7 +232,6 @@ export default function App() {
   // --- UTILS ---
   const activeJobs = jobs.filter(j => !j.archived);
 
-  // SEARCH + SORT ALGORITHM HUB FOR CRM
   const processedCrmRecords = jobs
     .filter(job => {
       const searchString = `${job.customerName} ${job.phone} ${job.vehicleMake} ${job.vehicleModel} ${job.status}`.toLowerCase();
@@ -264,21 +263,33 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100 flex flex-col relative">
       
-      {/* NAV BAR */}
-      <nav className="bg-black border-b border-yellow-600/30 p-4 sticky top-0 z-40 shadow-lg print:hidden">
+      {/* NAV BAR WITH OFFICIALLY BRANDED LOGO HEADER */}
+      <nav className="bg-black border-b border-yellow-500/30 p-3 sticky top-0 z-40 shadow-lg print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-300 flex items-center justify-center text-black font-bold italic text-xl">P</div>
-            <h1 className="text-xl font-extrabold uppercase tracking-widest italic text-white leading-none">Precision</h1>
-            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 px-2 py-0.5 rounded-full ml-2">Live Cloud</span>
+            {/* Direct Vector Embedded Image Asset */}
+            <img 
+              src={LOGO_URL} 
+              alt="Precision Graphics Co. Logo" 
+              className="h-10 object-contain rounded border border-zinc-800"
+              onError={(e) => {
+                // Fail-safe text fallback rendering if host connection ever drops
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="flex flex-col">
+              <h1 className="text-sm font-black uppercase tracking-widest italic text-white leading-none">Precision</h1>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">Graphics Co. Operating Engine</span>
+            </div>
+            <span className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded-full ml-1 font-bold uppercase tracking-tight">Live Cloud</span>
           </div>
           <div className="flex gap-2 md:gap-4 flex-wrap justify-center">
-            <button onClick={() => {setCurrentView('intake'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'intake' ? 'text-yellow-500' : 'text-zinc-400'}`}>+ New Intake</button>
-            <button onClick={() => {setCurrentView('board'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'board' ? 'text-yellow-500' : 'text-zinc-400'}`}>Workflow Board</button>
-            <button onClick={() => {setCurrentView('inventory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'inventory' ? 'text-yellow-500' : 'text-zinc-400'}`}>Inventory</button>
-            <button onClick={() => {setCurrentView('crm-directory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm relative ${currentView === 'crm-directory' ? 'text-yellow-500' : 'text-zinc-400'}`}>
+            <button onClick={() => {setCurrentView('intake'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'intake' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>+ New Intake</button>
+            <button onClick={() => {setCurrentView('board'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'board' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>Workflow Board</button>
+            <button onClick={() => {setCurrentView('inventory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'inventory' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>Inventory</button>
+            <button onClick={() => {setCurrentView('crm-directory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider relative ${currentView === 'crm-directory' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>
               👥 Customer CRM Directory
-              {jobs.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-600 text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{jobs.length}</span>}
+              {jobs.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-500 text-black font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{jobs.length}</span>}
             </button>
           </div>
         </div>
@@ -287,67 +298,70 @@ export default function App() {
       {/* MAIN CONTENT */}
       <main className="flex-grow p-4 md:p-6 flex flex-col">
         
-        {/* VIEW QUOTE / INVOICE MODE */}
+        {/* VIEW BRANDED QUOTE / INVOICE MODE */}
         {documentMode && selectedJob ? (
-          <div className="max-w-4xl mx-auto w-full bg-white text-zinc-900 p-8 md:p-12 shadow-2xl rounded-sm mb-20 animate-fade-in">
-            <div className="flex justify-between items-start border-b-2 border-zinc-100 pb-8 mb-8">
-              <div>
-                <h1 className="text-3xl font-black uppercase italic tracking-tighter">Precision <span className="text-yellow-600">Wraps & Tint</span></h1>
-                <p className="text-sm text-zinc-500 mt-1">Cape Coral, FL | (239) 445-6022</p>
-                <p className="text-sm text-zinc-500">www.precisiongraphicsco.com</p>
+          <div className="max-w-4xl mx-auto w-full bg-white text-zinc-900 p-8 md:p-12 shadow-2xl rounded-sm mb-20 border-t-8 border-black animate-fade-in">
+            <div className="flex justify-between items-start border-b-2 border-zinc-100 pb-6 mb-6">
+              <div className="flex items-center gap-4">
+                <img src={LOGO_URL} alt="Precision Graphics Co." className="h-16 object-contain rounded" />
+                <div>
+                  <h1 className="text-2xl font-black uppercase italic tracking-tighter text-black">Precision <span className="text-yellow-600">Graphics Co.</span></h1>
+                  <p className="text-xs text-zinc-500 mt-0.5 font-medium">Cape Coral, FL | (239) 445-6022</p>
+                  <p className="text-xs text-yellow-600 font-semibold">www.precisiongraphicsco.com</p>
+                </div>
               </div>
               <div className="text-right">
-                <h2 className="text-3xl font-light text-zinc-400 uppercase tracking-widest">
-                  {documentMode === 'quote' ? 'Detailed Quote' : 'Invoice'}
+                <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-wide">
+                  {documentMode === 'quote' ? 'Detailed Estimate' : 'Final Invoice'}
                 </h2>
-                <p className="mt-2 font-bold text-zinc-800">{documentMode === 'quote' ? 'QTE' : 'INV'}-{selectedJob.id}</p>
-                <p className="text-sm text-zinc-500">{new Date(selectedJob.created_at || Date.now()).toLocaleDateString()}</p>
+                <p className="mt-1 font-mono font-bold text-sm text-zinc-700">{documentMode === 'quote' ? 'QTE' : 'INV'}-{selectedJob.id}</p>
+                <p className="text-xs text-zinc-500 font-medium">Date: {new Date(selectedJob.created_at || Date.now()).toLocaleDateString()}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-2 gap-8 mb-10 bg-zinc-50 p-4 rounded border border-zinc-100">
               <div>
-                <h3 className="text-xs uppercase font-bold text-zinc-400 tracking-widest mb-2">Prepared For:</h3>
-                <p className="font-bold text-lg">{selectedJob.customerName}</p>
-                <p className="text-zinc-600">{selectedJob.street}</p>
-                <p className="text-zinc-600">{selectedJob.city}, {selectedJob.state} {selectedJob.zip}</p>
-                <p className="text-zinc-600">{selectedJob.phone}</p>
+                <h3 className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">Prepared For:</h3>
+                <p className="font-bold text-base text-black leading-tight">{selectedJob.customerName}</p>
+                <p className="text-zinc-600 text-xs mt-1">{selectedJob.street}</p>
+                <p className="text-zinc-600 text-xs">{selectedJob.city}, {selectedJob.state} {selectedJob.zip}</p>
+                <p className="text-zinc-900 font-mono font-bold text-xs mt-1">{selectedJob.phone}</p>
               </div>
               <div>
-                <h3 className="text-xs uppercase font-bold text-zinc-400 tracking-widest mb-2">Project Specification:</h3>
-                <p className="text-zinc-800 font-medium">{selectedJob.vehicleYear} {selectedJob.vehicleMake} {selectedJob.vehicleModel}</p>
-                <p className="text-zinc-500 text-sm italic mt-1">Type: {selectedJob.jobType} ({selectedJob.location})</p>
+                <h3 className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">Project Specification:</h3>
+                <p className="text-zinc-900 font-bold text-sm">{selectedJob.vehicleYear} {selectedJob.vehicleMake} {selectedJob.vehicleModel}</p>
+                <p className="text-zinc-500 text-xs italic mt-0.5 uppercase tracking-wider font-bold">Type: {selectedJob.jobType} ({selectedJob.location})</p>
               </div>
             </div>
 
-            <table className="w-full mb-12">
+            <table className="w-full mb-10">
               <thead>
-                <tr className="border-b border-zinc-200 text-left text-xs uppercase text-zinc-400 font-bold">
-                  <th className="py-3">Line Item / Description</th>
-                  <th className="py-3 text-center">Qty</th>
-                  <th className="py-3 text-right">Unit Rate</th>
-                  <th className="py-3 text-right">Total</th>
+                <tr className="border-b-2 border-zinc-200 text-left text-[10px] uppercase text-zinc-400 font-black tracking-wider">
+                  <th className="py-2.5">Line Item / Coverage Description</th>
+                  <th className="py-2.5 text-center">Qty Parameter</th>
+                  <th className="py-2.5 text-right">Unit Rate</th>
+                  <th className="py-2.5 text-right">Total</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
-                <tr className="border-b border-zinc-50">
-                  <td className="py-4 font-semibold text-zinc-800">{activeMaterialName} Coverage</td>
-                  <td className="py-4 text-center">{selectedJob.sqFt} sqft</td>
-                  <td className="py-4 text-right">${activeMaterialRate.toFixed(2)}</td>
-                  <td className="py-4 text-right font-medium">${(selectedJob.sqFt * activeMaterialRate).toFixed(2)}</td>
+              <tbody className="text-xs">
+                <tr className="border-b border-zinc-100">
+                  <td className="py-3.5 font-bold text-zinc-800">{activeMaterialName} Premium Film Coverage</td>
+                  <td className="py-3.5 text-center font-mono">{selectedJob.sqFt} sqft</td>
+                  <td className="py-3.5 text-right font-mono">${activeMaterialRate.toFixed(2)}</td>
+                  <td className="py-3.5 text-right font-bold font-mono">${(selectedJob.sqFt * activeMaterialRate).toFixed(2)}</td>
                 </tr>
-                <tr className="border-b border-zinc-50">
-                  <td className="py-4 font-semibold text-zinc-800">Professional Installation & Labor</td>
-                  <td className="py-4 text-center">{selectedJob.hours} hrs</td>
-                  <td className="py-4 text-right">${selectedJob.laborRate?.toFixed(2)}</td>
-                  <td className="py-4 text-right font-medium">${(selectedJob.hours * selectedJob.laborRate).toFixed(2)}</td>
+                <tr className="border-b border-zinc-100">
+                  <td className="py-3.5 font-bold text-zinc-800">Professional Vehicle Prep, Installation & Labor</td>
+                  <td className="py-3.5 text-center font-mono">{selectedJob.hours} hrs</td>
+                  <td className="py-3.5 text-right font-mono">${selectedJob.laborRate?.toFixed(2)}</td>
+                  <td className="py-3.5 text-right font-bold font-mono">${(selectedJob.hours * selectedJob.laborRate).toFixed(2)}</td>
                 </tr>
                 {selectedJob.adjustment !== 0 && (
-                  <tr className="border-b border-zinc-50 bg-zinc-50/50">
-                    <td className="py-4 font-semibold text-zinc-800 italic">Custom Adjustment / Upgrade Bundle</td>
-                    <td className="py-4 text-center">-</td>
-                    <td className="py-4 text-right">-</td>
-                    <td className="py-4 text-right font-medium text-yellow-600">
+                  <tr className="border-b border-zinc-100 bg-zinc-50/50">
+                    <td className="py-3.5 font-bold text-zinc-800 italic">Custom Adjustment / Upgrade Surcharge Bundle</td>
+                    <td className="py-3.5 text-center font-mono">-</td>
+                    <td className="py-3.5 text-right font-mono">-</td>
+                    <td className="py-3.5 text-right font-black font-mono text-yellow-600">
                       {selectedJob.adjustment > 0 ? '+' : ''}${selectedJob.adjustment.toFixed(2)}
                     </td>
                   </tr>
@@ -356,19 +370,19 @@ export default function App() {
             </table>
 
             <div className="flex justify-end">
-              <div className="w-64 space-y-3">
-                <div className="flex justify-between text-zinc-500"><span>Subtotal:</span><span>${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between text-zinc-500"><span>Estimated Tax (6.5%):</span><span>${taxAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between text-xl font-bold border-t-2 border-zinc-100 pt-3 text-zinc-900">
-                  <span>{documentMode === 'quote' ? 'Total Estimate:' : 'Total Due:'}</span>
-                  <span className="text-yellow-600">${grandTotal.toFixed(2)}</span>
+              <div className="w-64 space-y-2.5 text-xs">
+                <div className="flex justify-between text-zinc-500 font-medium"><span>Subtotal:</span><span className="font-mono">${subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-zinc-500 font-medium"><span>Estimated FL Sales Tax (6.5%):</span><span className="font-mono">${taxAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between text-base font-black border-t-2 border-zinc-200 pt-2.5 text-black">
+                  <span>{documentMode === 'quote' ? 'Total Estimate:' : 'Total Amount Due:'}</span>
+                  <span className="text-yellow-600 font-mono">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             <div className="mt-12 flex gap-4 print:hidden">
-              <button onClick={() => window.print()} className="bg-zinc-900 text-white px-8 py-3 rounded font-bold hover:bg-black transition">🖨️ Print or Save PDF</button>
-              <button onClick={() => setDocumentMode(null)} className="border border-zinc-200 text-zinc-500 px-8 py-3 rounded font-bold hover:bg-zinc-50 transition">Back to Project Controls</button>
+              <button onClick={() => window.print()} className="bg-black text-white px-8 py-3 rounded font-bold hover:bg-zinc-900 transition tracking-wide text-xs uppercase shadow-md">🖨️ Print / Save Branded PDF</button>
+              <button onClick={() => setDocumentMode(null)} className="border-2 border-zinc-200 text-zinc-500 px-6 py-3 rounded font-bold hover:bg-zinc-50 transition text-xs uppercase tracking-wide">Back to Dashboard Controls</button>
             </div>
           </div>
         ) : (
@@ -378,14 +392,14 @@ export default function App() {
                <div className="flex-grow flex flex-col h-full animate-fade-in">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                     <div>
-                      <h2 className="text-2xl font-bold text-white">Workflow Board</h2>
-                      <p className="text-xs text-zinc-500">Click any card to edit specs, send quotes, or override columns.</p>
+                      <h2 className="text-2xl font-bold text-white tracking-tight">Active Production Bays</h2>
+                      <p className="text-xs text-zinc-500">Live shop floor tracking pipeline. Select any car to view specs or print sheets.</p>
                     </div>
                     <button 
                       onClick={() => setFitToScreen(!fitToScreen)} 
-                      className="px-3 py-1 bg-zinc-900 border border-zinc-700 hover:border-yellow-500 text-xs rounded font-semibold text-zinc-300 flex items-center gap-1.5 transition"
+                      className="px-3 py-1 bg-zinc-900 border border-zinc-800 hover:border-yellow-500/50 text-xs rounded font-bold text-zinc-300 flex items-center gap-1.5 transition"
                     >
-                      {fitToScreen ? "↔️ Enable Scroll Mode" : "🔍 Fit All to Screen"}
+                      {fitToScreen ? "↔️ Enable Scroll view" : "🔍 Fit All to Screen Matrix"}
                     </button>
                   </div>
 
@@ -393,11 +407,11 @@ export default function App() {
                     {workflowStages.map(stage => (
                       <div 
                         key={stage} 
-                        className={`${fitToScreen ? 'w-full sm:w-[19%] xl:w-auto' : 'w-56'} bg-zinc-900/40 rounded-lg border border-zinc-800 p-2.5 flex-shrink-0`}
+                        className={`${fitToScreen ? 'w-full sm:w-[19%] xl:w-auto' : 'w-56'} bg-zinc-900/40 rounded-lg border border-zinc-900 p-2.5 flex-shrink-0`}
                       >
-                        <h3 className="font-extrabold text-zinc-500 uppercase text-[10px] mb-2.5 tracking-wider flex justify-between items-center px-1">
+                        <h3 className="font-black text-zinc-500 uppercase text-[10px] mb-2.5 tracking-wider flex justify-between items-center px-1">
                           <span className="truncate max-w-[80%]">{stage}</span>
-                          <span className="bg-zinc-800 text-[9px] px-1.5 py-0.5 rounded text-zinc-400 font-bold">
+                          <span className="bg-zinc-800 text-[9px] px-1.5 py-0.5 rounded text-yellow-500 font-black font-mono">
                             {activeJobs.filter(j => j.status === stage).length}
                           </span>
                         </h3>
@@ -406,18 +420,19 @@ export default function App() {
                             <div 
                               key={job.id} 
                               onClick={() => setSelectedJob(job)} 
-                              className="bg-zinc-950 p-2.5 rounded border border-zinc-800/80 hover:border-yellow-500 transition cursor-pointer shadow-md group relative"
+                              className="bg-zinc-950 p-2.5 rounded border border-zinc-900 hover:border-yellow-500/40 transition cursor-pointer shadow-md group relative"
                             >
-                              <h4 className="font-bold text-zinc-200 text-xs truncate group-hover:text-white">{job.customerName}</h4>
-                              <p className="text-[10px] text-zinc-500 truncate mt-0.5">{job.vehicleYear} {job.vehicleMake} {job.vehicleModel}</p>
+                              <div className="absolute top-2.5 right-2 w-1.5 h-1.5 rounded-full bg-yellow-500 opacity-0 group-hover:opacity-100 transition" />
+                              <h4 className="font-extrabold text-zinc-200 text-xs truncate group-hover:text-white">{job.customerName}</h4>
+                              <p className="text-[10px] text-zinc-500 truncate mt-0.5 font-medium">{job.vehicleYear} {job.vehicleMake} {job.vehicleModel}</p>
                               <div className="mt-2 flex justify-between items-center border-t border-zinc-900/60 pt-1.5">
-                                <span className="text-yellow-600 font-extrabold text-[11px]">${job.total?.toFixed(0)}</span>
-                                <span className="text-[9px] text-zinc-500 group-hover:text-yellow-500 font-medium transition">Open ➡️</span>
+                                <span className="text-yellow-500 font-black text-[11px] font-mono">${job.total?.toFixed(0)}</span>
+                                <span className="text-[9px] text-zinc-600 group-hover:text-yellow-500 font-bold uppercase tracking-wider transition">Open file ➡️</span>
                               </div>
                             </div>
                           ))}
                           {activeJobs.filter(j => j.status === stage).length === 0 && (
-                            <p className="text-zinc-800 text-[10px] italic text-center py-3 border border-dashed border-zinc-900 rounded">Empty</p>
+                            <p className="text-zinc-800/60 text-[9px] uppercase font-bold tracking-widest text-center py-3 border border-dashed border-zinc-900/80 rounded">Clear</p>
                           )}
                         </div>
                       </div>
@@ -522,7 +537,7 @@ export default function App() {
                   </section>
 
                   <section className="bg-zinc-950 p-6 rounded-lg border border-zinc-800">
-                    <h2 className="text-xl font-semibold mb-4 border-b border-zinc-700 pb-2 text-yellow-500">3. Internal Estimation</h2>
+                    <h2 className="text-xl font-semibold mb-4 border-b border-zinc-800 pb-2 text-yellow-500">3. Internal Estimation</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                       <div>
                         <label className="block text-xs font-medium text-zinc-400 mb-1">Material Type</label>
@@ -611,32 +626,29 @@ export default function App() {
                </div>
             )}
 
-            {/* ADVANCED UNIFIED MASTER CRM - SEARCHABLE & SORTABLE */}
+            {/* UNIFIED CUSTOMER CRM DIRECTORY */}
             {currentView === 'crm-directory' && (
               <div className="max-w-6xl mx-auto w-full animate-fade-in flex flex-col h-full">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                   <div>
-                    <h2 className="text-3xl font-bold text-white">Master Customer CRM Directory</h2>
-                    <p className="text-sm text-zinc-400 mt-1">Unified matrix of all files, warranty registries, and callback profiles.</p>
+                    <h2 className="text-3xl font-bold text-white tracking-tight">Master Customer CRM Directory</h2>
+                    <p className="text-sm text-zinc-400 mt-1">Unified registry of all historical files, active projects, and archived records.</p>
                   </div>
                   
-                  {/* NEW ADVANCED SEARCH & SORT INTERACTION PANEL */}
                   <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                    {/* Live Search */}
                     <div className="relative flex-grow sm:w-64">
                       <input 
                         type="text"
-                        placeholder="🔍 Search name, phone, wrap..."
+                        placeholder="🔍 Search client, phone, status..."
                         value={crmSearchTerm}
                         onChange={(e) => setCrmSearchTerm(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-4 text-white text-xs outline-none focus:border-yellow-500 transition"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-yellow-500 rounded-lg py-2 px-4 text-white text-xs outline-none transition"
                       />
                     </div>
-                    {/* Live Sort Override Engine */}
                     <select 
                       value={crmSortRule} 
                       onChange={(e) => setCrmSortRule(e.target.value)}
-                      className="bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-3 text-xs font-semibold text-yellow-500 outline-none focus:border-yellow-500 transition cursor-pointer"
+                      className="bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-xs font-bold text-yellow-500 outline-none focus:border-yellow-500 transition cursor-pointer"
                     >
                       <option value="newest">📅 Date: Newest Registered</option>
                       <option value="oldest">📅 Date: Oldest History</option>
@@ -656,51 +668,51 @@ export default function App() {
                         <th className="p-4">Contact Details</th>
                         <th className="p-4">Vehicle Specs</th>
                         <th className="p-4 text-center">Lifecycle Status Flag</th>
-                        <th className="p-4 text-right">Job Running Value</th>
+                        <th className="p-4 text-right">Running File Total</th>
                         <th className="p-4 text-center">Data Controls</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
                       {processedCrmRecords.length === 0 && (
-                        <tr><td colSpan={6} className="p-12 text-center text-zinc-500 italic">No matching client records located in the filtered registry.</td></tr>
+                        <tr><td colSpan={6} className="p-12 text-center text-zinc-500 italic">No matching client records found.</td></tr>
                       )}
                       {processedCrmRecords.map(lead => (
                         <tr key={lead.id} className="border-t border-zinc-800/60 hover:bg-zinc-950/40 transition">
-                          <td className="p-4 font-bold text-white">
+                          <td className="p-4 font-extrabold text-white">
                             <button onClick={() => setSelectedJob(lead)} className="hover:text-yellow-500 text-left transition outline-none">
                               {lead.customerName}
                             </button>
                           </td>
                           <td className="p-4 text-zinc-400">
-                            <div className="text-xs font-medium font-mono">{lead.phone}</div>
+                            <div className="text-xs font-bold font-mono text-zinc-300">{lead.phone}</div>
                             <div className="text-[11px] text-zinc-500 mt-0.5 truncate max-w-[180px]">{lead.email || 'No email logged'}</div>
                           </td>
                           <td className="p-4">
-                            <div className="text-xs font-semibold text-zinc-300">{lead.vehicleYear} {lead.vehicleMake} {lead.vehicleModel}</div>
-                            <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">{lead.jobType}</div>
+                            <div className="text-xs font-bold text-zinc-300">{lead.vehicleYear} {lead.vehicleMake} {lead.vehicleModel}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider font-semibold">{lead.jobType}</div>
                           </td>
                           <td className="p-4 text-center">
                             {lead.archived ? (
-                              <span className="text-[10px] font-black bg-purple-950/40 border border-purple-800/60 text-purple-400 py-1 px-2.5 rounded-full uppercase tracking-tight">📁 Potential Lead</span>
+                              <span className="text-[9px] font-black bg-purple-950/40 border border-purple-800/60 text-purple-400 py-1 px-2.5 rounded-full uppercase tracking-wider">📁 Potential Lead</span>
                             ) : lead.status === 'Delivered' ? (
-                              <span className="text-[10px] font-black bg-emerald-950/50 border border-emerald-800/60 text-emerald-400 py-1 px-2.5 rounded-full uppercase tracking-tight">🎉 Past Customer</span>
+                              <span className="text-[9px] font-black bg-emerald-950/40 border border-emerald-800/60 text-emerald-400 py-1 px-2.5 rounded-full uppercase tracking-wider">🎉 Past Customer</span>
                             ) : (
-                              <span className="text-[10px] font-black bg-blue-950/50 border border-blue-800/60 text-blue-400 py-1 px-2.5 rounded-full uppercase tracking-tight">⚡ Active Board: {lead.status}</span>
+                              <span className="text-[9px] font-black bg-blue-950/40 border border-blue-800/60 text-blue-400 py-1 px-2.5 rounded-full uppercase tracking-wider">⚡ Active Board: {lead.status}</span>
                             )}
                           </td>
                           <td className="p-4 text-right font-black text-zinc-300 font-mono">${lead.total?.toFixed(2)}</td>
                           <td className="p-4">
                             <div className="flex gap-2 justify-center">
                               {lead.archived ? (
-                                <button onClick={() => handleUnarchiveLead(lead.id)} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white text-[11px] px-2.5 py-1 rounded transition font-medium">
-                                  🔄 Restore Board
+                                <button onClick={() => handleUnarchiveLead(lead.id)} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white text-[11px] px-2.5 py-1 rounded transition font-bold uppercase tracking-wider">
+                                  🔄 Restore
                                 </button>
                               ) : (
-                                <button onClick={() => handleArchiveLead(lead.id)} className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 text-[11px] px-2.5 py-1 rounded transition font-medium">
-                                  📁 Archive Lead
+                                <button onClick={() => handleArchiveLead(lead.id)} className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 text-[11px] px-2.5 py-1 rounded transition font-bold uppercase tracking-wider">
+                                  📁 Archive
                                 </button>
                               )}
-                              <button onClick={() => handleDeleteLead(lead.id)} className="bg-red-950/20 border border-red-900/40 hover:bg-red-900 text-red-300 text-[11px] px-2.5 py-1 rounded transition font-medium">
+                              <button onClick={() => handleDeleteLead(lead.id)} className="bg-red-950/20 border border-red-900/40 hover:bg-red-900 text-red-300 text-[11px] px-2.5 py-1 rounded transition font-bold uppercase tracking-wider">
                                 🗑️ Wipe
                               </button>
                             </div>
@@ -722,9 +734,12 @@ export default function App() {
           <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             
             <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-black">
-              <div>
-                <h2 className="text-2xl font-bold text-white">{selectedJob.customerName}</h2>
-                <p className="text-xs text-zinc-400 mt-1">Project ID: #{selectedJob.id} | Specs: {selectedJob.street}, {selectedJob.city}</p>
+              <div className="flex items-center gap-3">
+                <img src={LOGO_URL} alt="" className="h-8 object-contain rounded" />
+                <div>
+                  <h2 className="text-xl font-black text-white">{selectedJob.customerName}</h2>
+                  <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">Record ID: #{selectedJob.id} | Location: {selectedJob.street}, {selectedJob.city}</p>
+                </div>
               </div>
               <button onClick={() => setSelectedJob(null)} className="text-zinc-500 text-2xl hover:text-white transition">✕</button>
             </div>
@@ -746,12 +761,12 @@ export default function App() {
                 </div>
                 <div className="text-right">
                   <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block">Running Total</span>
-                  <span className="text-emerald-400 font-black text-2xl">${selectedJob.total?.toFixed(2)}</span>
+                  <span className="text-emerald-400 font-black text-2xl font-mono">${selectedJob.total?.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* ACTION EXECUTION INTERACTION PANEL */}
-              <div className="bg-zinc-950 p-5 rounded-xl border border-yellow-600/20 shadow-inner">
+              <div className="bg-zinc-950 p-5 rounded-xl border border-yellow-500/10 shadow-inner">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex-grow">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-1">Workflow Execution Panel</h3>
