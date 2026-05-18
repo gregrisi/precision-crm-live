@@ -41,11 +41,21 @@ const workflowStages = [
   "Install Complete", "Invoiced", "Paid", "Delivered"
 ];
 
-const TAX_RATE = 0.065; // 6.5% Florida
+const TAX_RATE = 0.065; 
 const LOGO_URL = "https://www.precisiongraphicsco.com/images/nav-logo.jpeg";
 
+// --- SECURITY PROTOCOL SETTINGS ---
+const MASTER_PASSWORD = "Precision2026!"; // 👈 CHANGE THIS TO YOUR SHOP PASSWORD BEFORE PUSHING
+
 export default function App() {
-  // --- STATE ---
+  // --- GATEKEEPER SECURITY STATE ---
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('precision_session') === 'active';
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // --- CORE SYSTEM STATE ---
   const [currentView, setCurrentView] = useState('board'); 
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
@@ -65,11 +75,13 @@ export default function App() {
 
   const [newMaterial, setNewMaterial] = useState({ name: '', category: 'Vinyl', pricePerSqFt: '', stockSqFt: '' });
 
-  // --- STARTUP CLOUD FETCH ---
+  // --- STARTUP CLOUD FETCH (ONLY RUNS IF AUTHENTICATED) ---
   useEffect(() => {
-    fetchInventory();
-    fetchJobs();
-  }, []);
+    if (isAuthenticated) {
+      fetchInventory();
+      fetchJobs();
+    }
+  }, [isAuthenticated]);
 
   async function fetchInventory() {
     const { data, error } = await supabase.from('inventory').select('*');
@@ -85,6 +97,26 @@ export default function App() {
     if (data) setJobs(data);
     if (error) console.error("Error fetching jobs:", error);
   }
+
+  // --- LOGIN VALIDATION ENGINE ---
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === MASTER_PASSWORD) {
+      localStorage.setItem('precision_session', 'active');
+      setIsAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('❌ Access Denied: Invalid Command Credentials.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('precision_session');
+    setIsAuthenticated(false);
+    setPasswordInput('');
+    setSelectedJob(null);
+    setDocumentMode(null);
+  };
 
   // --- CRM MANAGEMENT ENGINE ---
   const updateJobStatus = async (jobId: number, newStatus: string) => {
@@ -229,7 +261,7 @@ export default function App() {
     }
   };
 
-  // --- UTILS ---
+  // --- SYSTEM UTILS ---
   const activeJobs = jobs.filter(j => !j.archived);
 
   const processedCrmRecords = jobs
@@ -260,36 +292,78 @@ export default function App() {
   const taxAmount = subtotal * TAX_RATE;
   const grandTotal = subtotal + taxAmount;
 
+  // --- IF SHIELD IS ACTIVE: RENDER GATEKEEPER LOGIN MATRIX ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 font-sans text-zinc-100">
+        <div className="w-full max-w-md bg-black border border-zinc-800 rounded-xl shadow-2xl p-8 space-y-6 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <img src={LOGO_URL} alt="Precision Graphics Co." className="h-14 object-contain rounded" />
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-widest italic text-white">Precision Graphics Co.</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase mt-1 tracking-wider">Cloud Management Infrastructure</p>
+            </div>
+          </div>
+          
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-yellow-500/30 to-transparent" />
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs uppercase font-black text-zinc-400 tracking-wider mb-1.5">Enter Master Passkey Code</label>
+              <input 
+                type="password" 
+                placeholder="•••••••••••••"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-sm outline-none focus:border-yellow-500 transition font-mono tracking-widest"
+                required
+                autoFocus
+              />
+            </div>
+
+            {loginError && (
+              <p className="text-xs font-bold text-red-400 bg-red-950/20 border border-red-900/40 p-2.5 rounded text-center animate-fade-in">
+                {loginError}
+              </p>
+            )}
+
+            <button type="submit" className="w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black uppercase text-xs tracking-widest rounded-lg hover:from-yellow-500 hover:to-yellow-300 transition shadow-lg mt-2">
+              Decrypt & Access Core System ⚡
+            </button>
+          </form>
+
+          <p className="text-[10px] text-zinc-600 font-medium">Authorized Shop Floor Access Terminals Only. Session parameter logging active.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- IF AUTHENTICATED: RENDER MASTER OPERATING CRM PLATFORM ---
   return (
     <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100 flex flex-col relative">
       
-      {/* NAV BAR WITH OFFICIALLY BRANDED LOGO HEADER */}
+      {/* NAV BAR */}
       <nav className="bg-black border-b border-yellow-500/30 p-3 sticky top-0 z-40 shadow-lg print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            {/* Direct Vector Embedded Image Asset */}
-            <img 
-              src={LOGO_URL} 
-              alt="Precision Graphics Co. Logo" 
-              className="h-10 object-contain rounded border border-zinc-800"
-              onError={(e) => {
-                // Fail-safe text fallback rendering if host connection ever drops
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+            <img src={LOGO_URL} alt="Precision Graphics Co. Logo" className="h-10 object-contain rounded border border-zinc-800" />
             <div className="flex flex-col">
               <h1 className="text-sm font-black uppercase tracking-widest italic text-white leading-none">Precision</h1>
               <span className="text-[10px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">Graphics Co. Operating Engine</span>
             </div>
-            <span className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded-full ml-1 font-bold uppercase tracking-tight">Live Cloud</span>
+            <span className="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded-full ml-1 font-bold uppercase tracking-tight">Secure</span>
           </div>
-          <div className="flex gap-2 md:gap-4 flex-wrap justify-center">
+          <div className="flex gap-2 md:gap-4 flex-wrap justify-center items-center">
             <button onClick={() => {setCurrentView('intake'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'intake' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>+ New Intake</button>
             <button onClick={() => {setCurrentView('board'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'board' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>Workflow Board</button>
             <button onClick={() => {setCurrentView('inventory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider ${currentView === 'inventory' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>Inventory</button>
             <button onClick={() => {setCurrentView('crm-directory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider relative ${currentView === 'crm-directory' ? 'text-yellow-500 bg-zinc-900 border border-zinc-800' : 'text-zinc-400 border border-transparent'}`}>
               👥 Customer CRM Directory
               {jobs.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-500 text-black font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{jobs.length}</span>}
+            </button>
+            {/* NEW LOGOUT TRIGGER ACTION SYSTEM */}
+            <button onClick={handleLogout} className="ml-2 border border-zinc-800 hover:border-red-900 text-zinc-500 hover:text-red-400 font-extrabold text-[10px] uppercase tracking-wider py-1.5 px-2.5 rounded transition">
+              🚪 Lock Exit
             </button>
           </div>
         </div>
@@ -343,7 +417,7 @@ export default function App() {
                   <th className="py-2.5 text-right">Total</th>
                 </tr>
               </thead>
-              <tbody className="text-xs">
+              <tbody className="text-sm">
                 <tr className="border-b border-zinc-100">
                   <td className="py-3.5 font-bold text-zinc-800">{activeMaterialName} Premium Film Coverage</td>
                   <td className="py-3.5 text-center font-mono">{selectedJob.sqFt} sqft</td>
