@@ -48,6 +48,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('board'); 
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
+  const [fitToScreen, setFitToScreen] = useState(false); // New Screen Optimizer Toggle
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -120,7 +121,6 @@ export default function App() {
     }
   };
 
-  // NEW UNDO STEPPER LOGIC
   const handleRegressStatus = async () => {
     if (!selectedJob) return;
     const currentIndex = workflowStages.indexOf(selectedJob.status);
@@ -258,7 +258,7 @@ export default function App() {
             <button onClick={() => {setCurrentView('board'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'board' ? 'text-yellow-500' : 'text-zinc-400'}`}>Workflow Board</button>
             <button onClick={() => {setCurrentView('inventory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'inventory' ? 'text-yellow-500' : 'text-zinc-400'}`}>Inventory</button>
             <button onClick={() => {setCurrentView('future-leads'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm relative ${currentView === 'future-leads' ? 'text-yellow-500' : 'text-zinc-400'}`}>
-              📁 Future Leads Vault
+              📁 Future Leads
               {futureLeads.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-600 text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{futureLeads.length}</span>}
             </button>
           </div>
@@ -266,7 +266,7 @@ export default function App() {
       </nav>
 
       {/* MAIN CONTENT */}
-      <main className="flex-grow p-4 md:p-8 flex flex-col">
+      <main className="flex-grow p-4 md:p-6 flex flex-col">
         
         {/* VIEW QUOTE / INVOICE MODE */}
         {documentMode && selectedJob ? (
@@ -354,32 +354,53 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* WORKFLOW BOARD */}
+            {/* COMPACT WORKFLOW BOARD */}
             {currentView === 'board' && (
                <div className="flex-grow flex flex-col h-full animate-fade-in">
-                  <h2 className="text-3xl font-bold text-white mb-6">Workflow Board</h2>
-                  <div className="flex gap-6 overflow-x-auto pb-4 h-full items-start">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Workflow Board</h2>
+                      <p className="text-xs text-zinc-500">Click any card to edit specs, send quotes, or override columns.</p>
+                    </div>
+                    {/* OPTIMIZER TOGGLE ENGINE */}
+                    <button 
+                      onClick={() => setFitToScreen(!fitToScreen)} 
+                      className="px-3 py-1 bg-zinc-900 border border-zinc-700 hover:border-yellow-500 text-xs rounded font-semibold text-zinc-300 flex items-center gap-1.5 transition"
+                    >
+                      {fitToScreen ? "↔️ Enable Scroll Mode" : "🔍 Fit All to Screen"}
+                    </button>
+                  </div>
+
+                  {/* HIGH-COMPRESSION LAYOUT HUB */}
+                  <div className={`flex ${fitToScreen ? 'flex-wrap xl:grid xl:grid-cols-5 gap-3' : 'gap-3 overflow-x-auto pb-4'} h-full items-start`}>
                     {workflowStages.map(stage => (
-                      <div key={stage} className="w-80 bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 flex-shrink-0">
-                        <h3 className="font-bold text-zinc-500 uppercase text-xs mb-4 tracking-wider flex justify-between">
-                          <span>{stage}</span>
-                          <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-normal">
+                      <div 
+                        key={stage} 
+                        className={`${fitToScreen ? 'w-full sm:w-[19%] xl:w-auto' : 'w-56'} bg-zinc-900/40 rounded-lg border border-zinc-800 p-2.5 flex-shrink-0`}
+                      >
+                        <h3 className="font-extrabold text-zinc-500 uppercase text-[10px] mb-2.5 tracking-wider flex justify-between items-center px-1">
+                          <span className="truncate max-w-[80%]">{stage}</span>
+                          <span className="bg-zinc-800 text-[9px] px-1.5 py-0.5 rounded text-zinc-400 font-bold">
                             {activeJobs.filter(j => j.status === stage).length}
                           </span>
                         </h3>
-                        <div className="space-y-3 max-h-[65vh] overflow-y-auto">
+                        <div className={`space-y-2 ${fitToScreen ? 'max-h-[35vh]' : 'max-h-[70vh]'} overflow-y-auto px-0.5`}>
                           {activeJobs.filter(j => j.status === stage).map(job => (
-                            <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 hover:border-yellow-500 transition cursor-pointer shadow-md">
-                              <h4 className="font-bold text-white">{job.customerName}</h4>
-                              <p className="text-xs text-zinc-400 mt-1">{job.vehicleYear} {job.vehicleMake} {job.vehicleModel}</p>
-                              <div className="mt-3 flex justify-between items-center border-t border-zinc-900 pt-2">
-                                <span className="text-yellow-500 font-bold text-sm">${job.total?.toFixed(2)}</span>
-                                <span className="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400 uppercase tracking-tight font-semibold">Open File</span>
+                            <div 
+                              key={job.id} 
+                              onClick={() => setSelectedJob(job)} 
+                              className="bg-zinc-950 p-2.5 rounded border border-zinc-800/80 hover:border-yellow-500 transition cursor-pointer shadow-md group relative"
+                            >
+                              <h4 className="font-bold text-zinc-200 text-xs truncate group-hover:text-white">{job.customerName}</h4>
+                              <p className="text-[10px] text-zinc-500 truncate mt-0.5">{job.vehicleYear} {job.vehicleMake} {job.vehicleModel}</p>
+                              <div className="mt-2 flex justify-between items-center border-t border-zinc-900/60 pt-1.5">
+                                <span className="text-yellow-600 font-extrabold text-[11px]">${job.total?.toFixed(0)}</span>
+                                <span className="text-[9px] text-zinc-500 group-hover:text-yellow-500 font-medium transition">Open ➡️</span>
                               </div>
                             </div>
                           ))}
                           {activeJobs.filter(j => j.status === stage).length === 0 && (
-                            <p className="text-zinc-700 text-xs italic text-center py-4 border border-dashed border-zinc-800/40 rounded-lg">Empty Column</p>
+                            <p className="text-zinc-800 text-[10px] italic text-center py-3 border border-dashed border-zinc-900 rounded">Empty</p>
                           )}
                         </div>
                       </div>
@@ -503,298 +524,4 @@ export default function App() {
                         <input type="number" name="hours" value={formData.hours} onChange={handleFormChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-zinc-400 mb-1">Labor Rate ($/hr)</label>
-                        <input type="number" name="laborRate" value={formData.laborRate} onChange={handleFormChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none" />
-                      </div>
-                    </div>
-                  </section>
-
-                  <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-950 p-6 rounded-lg border border-yellow-600/30 gap-6">
-                    <div>
-                      <p className="text-zinc-400 text-sm">Estimated Initial Base Quote</p>
-                      <p className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200 mt-1">${liveEstimatedSubtotal.toFixed(2)}</p>
-                    </div>
-                    <button type="submit" className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-md hover:from-yellow-500 hover:to-yellow-300 transition shadow-lg text-lg">
-                      Save as Lead File
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* INVENTORY MANAGER */}
-            {currentView === 'inventory' && (
-               <div className="max-w-6xl mx-auto w-full animate-fade-in">
-                  <h2 className="text-3xl font-bold text-white mb-6">Inventory Manager</h2>
-                  <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 mb-8 shadow-lg">
-                    <h3 className="text-lg font-bold text-yellow-500 mb-4 border-b border-zinc-800 pb-2">Add New Material</h3>
-                    <form onSubmit={handleAddMaterial} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-zinc-300 mb-1">Material Name / Color</label>
-                        <input type="text" value={newMaterial.name} onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})} className="w-full bg-zinc-950 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none" required />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1">Category</label>
-                        <select value={newMaterial.category} onChange={(e) => setNewMaterial({...newMaterial, category: e.target.value})} className="w-full bg-zinc-950 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none">
-                          <option value="Vinyl">Vinyl</option><option value="Tint">Window Tint</option><option value="PPF">PPF</option><option value="Other">Other</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1">Price ($/sqft)</label>
-                        <input type="number" step="0.01" value={newMaterial.pricePerSqFt} onChange={(e) => setNewMaterial({...newMaterial, pricePerSqFt: e.target.value})} className="w-full bg-zinc-950 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none" required />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1">Initial Stock (sqft)</label>
-                        <input type="number" value={newMaterial.stockSqFt} onChange={(e) => setNewMaterial({...newMaterial, stockSqFt: e.target.value})} className="w-full bg-zinc-950 border border-zinc-700 rounded-md p-2 text-white focus:ring-2 focus:ring-yellow-500 outline-none" required />
-                      </div>
-                      <div className="md:col-span-5 flex justify-end mt-2">
-                        <button type="submit" className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-md hover:from-yellow-500 hover:to-yellow-300 transition">+ Add Material</button>
-                      </div>
-                    </form>
-                  </div>
-
-                  <div className="bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
-                    <table className="w-full text-left">
-                      <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
-                        <tr><th className="p-4">Material Name</th><th className="p-4">Category</th><th className="p-4 text-right">Price/Sqft</th><th className="p-4">Stock</th></tr>
-                      </thead>
-                      <tbody>
-                        {inventory.map(m => (
-                          <tr key={m.id} className="border-t border-zinc-800">
-                            <td className="p-4">{m.name}</td>
-                            <td className="p-4"><span className="bg-zinc-800 border border-zinc-700 px-2 py-1 rounded text-xs">{m.category}</span></td>
-                            <td className="p-4 text-right text-yellow-500">${parseFloat(m.pricePerSqFt).toFixed(2)}</td>
-                            <td className="p-4">{m.stockSqFt} sqft</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-               </div>
-            )}
-
-            {/* FUTURE LEADS REPOSITORY VIEW */}
-            {currentView === 'future-leads' && (
-              <div className="max-w-6xl mx-auto w-full animate-fade-in">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white">Future CRM Leads Vault</h2>
-                    <p className="text-sm text-zinc-400 mt-1">Stored marketing contacts and cold proposal files outside the active production floor.</p>
-                  </div>
-                  <span className="bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 px-4 py-1.5 rounded-md font-mono text-sm font-bold">Total Staged: {futureLeads.length}</span>
-                </div>
-
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase font-bold">
-                      <tr>
-                        <th className="p-4">Client Name</th>
-                        <th className="p-4">Contact Detail</th>
-                        <th className="p-4">Film Intent</th>
-                        <th className="p-4 text-right">Quote Value</th>
-                        <th className="p-4 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-sm">
-                      {futureLeads.length === 0 && (
-                        <tr><td colSpan={5} className="p-12 text-center text-zinc-500 italic">No archived future leads found. File them using the panel on active Leads.</td></tr>
-                      )}
-                      {futureLeads.map(lead => (
-                        <tr key={lead.id} className="border-t border-zinc-800/60 hover:bg-zinc-950/40 transition">
-                          <td className="p-4 font-bold text-white">{lead.customerName}</td>
-                          <td className="p-4 text-zinc-400">
-                            <div className="text-xs">{lead.phone}</div>
-                            <div className="text-[11px] text-zinc-500 mt-0.5">{lead.email || 'No email log'}</div>
-                          </td>
-                          <td className="p-4">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{lead.vehicleYear} {lead.vehicleMake}</span>
-                            <div className="text-[10px] bg-zinc-800 border border-zinc-700/50 text-zinc-400 px-1.5 py-0.5 rounded w-max mt-1 uppercase font-bold">{lead.jobType}</div>
-                          </td>
-                          <td className="p-4 text-right font-bold text-emerald-400">${lead.total?.toFixed(2)}</td>
-                          <td className="p-4">
-                            <div className="flex gap-2 justify-center">
-                              <button onClick={() => handleUnarchiveLead(lead.id)} className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white text-xs px-3 py-1 rounded font-medium transition">
-                                🔄 Restore to Board
-                              </button>
-                              <button onClick={() => handleDeleteLead(lead.id)} className="bg-red-950/40 border border-red-900/60 hover:bg-red-900 text-red-200 text-xs px-3 py-1 rounded font-medium transition">
-                                🗑️ Wipe File
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* PROJECT FILE METRICS MODAL EXPLORER */}
-      {selectedJob && !documentMode && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            
-            <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-black">
-              <div>
-                <h2 className="text-2xl font-bold text-white">{selectedJob.customerName}</h2>
-                <p className="text-xs text-zinc-400 mt-1">Project ID: #{selectedJob.id} | Specs: {selectedJob.street}, {selectedJob.city}</p>
-              </div>
-              <button onClick={() => setSelectedJob(null)} className="text-zinc-500 text-2xl hover:text-white transition">✕</button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-6 flex-grow">
-              
-              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-wrap justify-between items-center gap-4">
-                <div>
-                  <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block mb-1">Current Stage Override Menu</span>
-                  <select 
-                    value={selectedJob.status} 
-                    onChange={(e) => updateJobStatus(selectedJob.id, e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded p-1.5 font-bold text-yellow-500 outline-none text-sm focus:ring-1 focus:ring-yellow-500"
-                  >
-                    {workflowStages.map(stage => (
-                      <option key={stage} value={stage}>{stage}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block">Running Total</span>
-                  <span className="text-emerald-400 font-black text-2xl">${selectedJob.total?.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* ACTION EXECUTION INTERACTION PANEL */}
-              <div className="bg-zinc-950 p-5 rounded-xl border border-yellow-600/20 shadow-inner">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex-grow">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-1">Workflow Execution Panel</h3>
-                    <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
-                      {selectedJob.status === 'Lead' && "Review scope specs below, then generate and send the proposal quote. If the lead goes cold, you can delete or archive the file."}
-                      {selectedJob.status === 'Quoted' && "Quote document sent. Awaiting explicit client confirmation approval to switch file into the queue."}
-                      {selectedJob.status === 'In Queue' && "Staged project in pipeline queue. Awaiting vehicle delivery drop-off matrix assignment to activate project floor work."}
-                      {selectedJob.status === 'Work Start' && "Active vehicle file. Track film usage parameters, installation labor, and record wrap notes."}
-                      {selectedJob.status === 'Install Complete' && "Wrap installation complete. Run billing compiler to post the invoice profile."}
-                      {selectedJob.status >= 'Invoiced' && "Financial billing view tracking stage."}
-                    </p>
-                  </div>
-                  
-                  {/* WORKFLOW DISPATCH CONTROLLER ENGINE */}
-                  <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto items-stretch sm:items-center md:items-end">
-                    {selectedJob.status === 'Lead' && (
-                      <>
-                        <button onClick={() => handleActionTrigger('quote_sent')} className="bg-gradient-to-r from-blue-600 to-blue-400 text-white font-bold py-2.5 px-4 rounded hover:from-blue-500 text-sm shadow transition text-center">
-                          📄 Send Proposal Quote
-                        </button>
-                        <div className="flex gap-2 w-full">
-                          <button onClick={() => handleArchiveLead(selectedJob.id)} className="flex-1 border border-zinc-800 bg-zinc-900 text-zinc-400 text-xs py-2 px-2 rounded hover:text-white hover:bg-zinc-800 transition">
-                            📁 Save Future Lead
-                          </button>
-                          <button onClick={() => handleDeleteLead(selectedJob.id)} className="flex-1 bg-red-950/50 border border-red-900/60 text-red-300 text-xs py-2 px-2 rounded hover:bg-red-900 hover:text-white transition">
-                            🗑️ Delete Lead
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    
-                    {selectedJob.status === 'Quoted' && (
-                      <>
-                        <button onClick={() => setDocumentMode('quote')} className="w-full border border-zinc-700 bg-zinc-900 text-zinc-300 text-xs py-2 px-4 rounded hover:bg-zinc-800 transition text-center">
-                          🔎 View/Review Proposal
-                        </button>
-                        <button onClick={() => handleActionTrigger('approved')} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-black font-black py-2.5 px-4 rounded hover:from-emerald-500 shadow text-sm transition text-center">
-                          ✅ Client Approved Project
-                        </button>
-                        <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition">
-                          ↩️ Undo (Move Back to Lead)
-                        </button>
-                      </>
-                    )}
-
-                    {selectedJob.status === 'In Queue' && (
-                      <>
-                        <button onClick={() => handleActionTrigger('ready_for_work')} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black py-3 px-6 rounded hover:from-yellow-500 shadow tracking-wider uppercase text-xs transition text-center">
-                          🚀 Ready for Work (Deploy to Bay)
-                        </button>
-                        <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition">
-                          ↩️ Undo (Move Back to Quoted)
-                        </button>
-                      </>
-                    )}
-
-                    {selectedJob.status !== 'Lead' && selectedJob.status !== 'Quoted' && selectedJob.status !== 'In Queue' && selectedJob.status !== 'Delivered' && (
-                      <div className="space-y-2 w-full">
-                        {selectedJob.status === 'Install Complete' ? (
-                          <button onClick={() => { setDocumentMode('invoice'); updateJobStatus(selectedJob.id, 'Invoiced'); }} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold py-2.5 px-4 rounded shadow hover:from-yellow-500 transition text-center text-sm">
-                            🧾 Compile & Post Final Invoice
-                          </button>
-                        ) : (
-                          <>
-                            {selectedJob.status >= 'Invoiced' && (
-                              <button onClick={() => setDocumentMode('invoice')} className="w-full border border-zinc-700 bg-zinc-900 text-zinc-300 text-xs py-2 px-4 rounded hover:bg-zinc-800 transition text-center block">
-                                📑 View Active Invoice File
-                              </button>
-                            )}
-                            <button onClick={handleAdvanceStatus} className="w-full bg-zinc-800 border border-zinc-700 text-white font-bold py-2.5 px-4 rounded hover:bg-zinc-700 shadow text-sm transition text-center block">
-                              ➡️ Advance to Next Step
-                            </button>
-                            <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition block">
-                              ↩️ Move to Previous Step
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedJob.status === 'Delivered' && (
-                      <div className="w-full text-center space-y-2">
-                        <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2 px-4 rounded-full block">🎉 Closed / Fully Settled & Delivered</span>
-                        <button onClick={handleRegressStatus} className="w-full border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition block">
-                          ↩️ Reopen File (Move Back)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ESTIMATION DATA CAPTURE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 space-y-4">
-                  <h3 className="text-yellow-500 font-bold border-b border-zinc-800 pb-2 text-sm uppercase tracking-wider">Scope Scope & Material Specs</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-zinc-400">Material Parameter (sq ft):</label>
-                    <input type="number" value={selectedJob.sqFt} onChange={(e) => handleJobAdjustment('sqFt', e.target.value)} className="w-24 bg-zinc-800 border border-zinc-700 rounded p-1 text-white focus:ring-1 focus:ring-yellow-500 outline-none text-right font-mono" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-zinc-400">Labor Matrix (Hours):</label>
-                    <input type="number" value={selectedJob.hours} onChange={(e) => handleJobAdjustment('hours', e.target.value)} className="w-24 bg-zinc-800 border border-zinc-700 rounded p-1 text-white focus:ring-1 focus:ring-yellow-500 outline-none text-right font-mono" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-zinc-900">
-                    <label className="text-sm text-zinc-400">Misc Surcharges / Discounts ($):</label>
-                    <input type="number" value={selectedJob.adjustment || ''} onChange={(e) => handleJobAdjustment('adjustment', e.target.value)} placeholder="0" className="w-24 bg-zinc-800 border border-zinc-700 rounded p-1 text-white focus:ring-1 focus:ring-yellow-500 outline-none text-right font-mono" />
-                  </div>
-                </div>
-
-                <div className="flex flex-col h-full bg-zinc-950 p-6 rounded-xl border border-zinc-800">
-                  <h3 className="text-zinc-400 font-bold border-b border-zinc-900 pb-2 text-sm uppercase tracking-wider mb-2">Internal Log & Shop Notes</h3>
-                  <textarea value={selectedJob.notes || ''} onChange={handleSaveNotes} className="flex-grow w-full bg-zinc-900 border border-zinc-800 p-4 rounded focus:ring-1 focus:ring-yellow-500 outline-none text-sm resize-none text-zinc-300 font-mono" placeholder="Log specs..."></textarea>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="p-4 border-t border-zinc-800 bg-black flex justify-end">
-              <button onClick={() => setSelectedJob(null)} className="px-6 py-2 border border-zinc-800 rounded font-bold hover:bg-zinc-900 text-sm transition">Close Explorer</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                        <label className="block
