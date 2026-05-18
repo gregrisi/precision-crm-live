@@ -45,11 +45,14 @@ const TAX_RATE = 0.065; // 6.5% Florida
 
 export default function App() {
   // --- STATE ---
-  const [currentView, setCurrentView] = useState('board'); // 'board' | 'intake' | 'inventory' | 'crm-directory'
+  const [currentView, setCurrentView] = useState('board'); 
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
   const [fitToScreen, setFitToScreen] = useState(false);
-  const [crmSearchTerm, setCrmSearchTerm] = useState(''); // Search state for master CRM Directory
+  
+  // Advanced CRM Controls State
+  const [crmSearchTerm, setCrmSearchTerm] = useState(''); 
+  const [crmSortRule, setCrmSortRule] = useState('newest'); // 'newest' | 'oldest' | 'name-az' | 'name-za' | 'value-high' | 'value-low'
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -226,14 +229,24 @@ export default function App() {
     }
   };
 
-  // --- CRM MATRIX FILTER UTILS ---
+  // --- UTILS ---
   const activeJobs = jobs.filter(j => !j.archived);
 
-  // Search Filter algorithm for global CRM list
-  const filteredCrmRecords = jobs.filter(job => {
-    const searchString = `${job.customerName} ${job.phone} ${job.vehicleMake} ${job.vehicleModel} ${job.status}`.toLowerCase();
-    return searchString.includes(crmSearchTerm.toLowerCase());
-  });
+  // SEARCH + SORT ALGORITHM HUB FOR CRM
+  const processedCrmRecords = jobs
+    .filter(job => {
+      const searchString = `${job.customerName} ${job.phone} ${job.vehicleMake} ${job.vehicleModel} ${job.status}`.toLowerCase();
+      return searchString.includes(crmSearchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      if (crmSortRule === 'newest') return b.id - a.id; 
+      if (crmSortRule === 'oldest') return a.id - b.id;
+      if (crmSortRule === 'value-high') return (b.total || 0) - (a.total || 0);
+      if (crmSortRule === 'value-low') return (a.total || 0) - (b.total || 0);
+      if (crmSortRule === 'name-az') return a.customerName.localeCompare(b.customerName);
+      if (crmSortRule === 'name-za') return b.customerName.localeCompare(a.customerName);
+      return 0;
+    });
 
   const currentMaterial = inventory.find(mat => mat.id === formData.selectedMaterialId);
   const liveMaterialCost = (parseFloat(formData.sqFt) || 0) * (currentMaterial ? parseFloat(currentMaterial.pricePerSqFt) : 0);
@@ -355,7 +368,7 @@ export default function App() {
 
             <div className="mt-12 flex gap-4 print:hidden">
               <button onClick={() => window.print()} className="bg-zinc-900 text-white px-8 py-3 rounded font-bold hover:bg-black transition">🖨️ Print or Save PDF</button>
-              <button onClick={() => documentMode && setDocumentMode(null)} className="border border-zinc-200 text-zinc-500 px-8 py-3 rounded font-bold hover:bg-zinc-50 transition">Back to Project Controls</button>
+              <button onClick={() => setDocumentMode(null)} className="border border-zinc-200 text-zinc-500 px-8 py-3 rounded font-bold hover:bg-zinc-50 transition">Back to Project Controls</button>
             </div>
           </div>
         ) : (
@@ -598,23 +611,40 @@ export default function App() {
                </div>
             )}
 
-            {/* UNIFIED MASTER CRM CUSTOMER DIRECTORY VIEW */}
+            {/* ADVANCED UNIFIED MASTER CRM - SEARCHABLE & SORTABLE */}
             {currentView === 'crm-directory' && (
               <div className="max-w-6xl mx-auto w-full animate-fade-in flex flex-col h-full">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                   <div>
                     <h2 className="text-3xl font-bold text-white">Master Customer CRM Directory</h2>
-                    <p className="text-sm text-zinc-400 mt-1">Unified search index of every client file, contact parameter, and job file history.</p>
+                    <p className="text-sm text-zinc-400 mt-1">Unified matrix of all files, warranty registries, and callback profiles.</p>
                   </div>
-                  {/* LIVE CRM SEARCH BAR ENGINE */}
-                  <div className="w-full md:w-80 relative">
-                    <input 
-                      type="text"
-                      placeholder="🔍 Search name, phone, vehicle, status..."
-                      value={crmSearchTerm}
-                      onChange={(e) => setCrmSearchTerm(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-4 pl-10 text-white text-sm outline-none focus:border-yellow-500 transition"
-                    />
+                  
+                  {/* NEW ADVANCED SEARCH & SORT INTERACTION PANEL */}
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    {/* Live Search */}
+                    <div className="relative flex-grow sm:w-64">
+                      <input 
+                        type="text"
+                        placeholder="🔍 Search name, phone, wrap..."
+                        value={crmSearchTerm}
+                        onChange={(e) => setCrmSearchTerm(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-4 text-white text-xs outline-none focus:border-yellow-500 transition"
+                      />
+                    </div>
+                    {/* Live Sort Override Engine */}
+                    <select 
+                      value={crmSortRule} 
+                      onChange={(e) => setCrmSortRule(e.target.value)}
+                      className="bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-3 text-xs font-semibold text-yellow-500 outline-none focus:border-yellow-500 transition cursor-pointer"
+                    >
+                      <option value="newest">📅 Date: Newest Registered</option>
+                      <option value="oldest">📅 Date: Oldest History</option>
+                      <option value="name-az">🔤 Name: Alphabetical (A-Z)</option>
+                      <option value="name-za">🔤 Name: Alphabetical (Z-A)</option>
+                      <option value="value-high">💰 Revenue: Highest Invoice</option>
+                      <option value="value-low">💰 Revenue: Lowest Invoice</option>
+                    </select>
                   </div>
                 </div>
 
@@ -631,10 +661,10 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {filteredCrmRecords.length === 0 && (
-                        <tr><td colSpan={6} className="p-12 text-center text-zinc-500 italic">No matching client profiles located in the global database registry.</td></tr>
+                      {processedCrmRecords.length === 0 && (
+                        <tr><td colSpan={6} className="p-12 text-center text-zinc-500 italic">No matching client records located in the filtered registry.</td></tr>
                       )}
-                      {filteredCrmRecords.map(lead => (
+                      {processedCrmRecords.map(lead => (
                         <tr key={lead.id} className="border-t border-zinc-800/60 hover:bg-zinc-950/40 transition">
                           <td className="p-4 font-bold text-white">
                             <button onClick={() => setSelectedJob(lead)} className="hover:text-yellow-500 text-left transition outline-none">
@@ -647,10 +677,9 @@ export default function App() {
                           </td>
                           <td className="p-4">
                             <div className="text-xs font-semibold text-zinc-300">{lead.vehicleYear} {lead.vehicleMake} {lead.vehicleModel}</div>
-                            <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">{lead.jobType} ({lead.location})</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">{lead.jobType}</div>
                           </td>
                           <td className="p-4 text-center">
-                            {/* DYNAMIC PIPELINE STATUS BADGING ENGINE */}
                             {lead.archived ? (
                               <span className="text-[10px] font-black bg-purple-950/40 border border-purple-800/60 text-purple-400 py-1 px-2.5 rounded-full uppercase tracking-tight">📁 Potential Lead</span>
                             ) : lead.status === 'Delivered' ? (
@@ -727,16 +756,12 @@ export default function App() {
                   <div className="flex-grow">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-1">Workflow Execution Panel</h3>
                     <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
-                      {selectedJob.status === 'Lead' && "Review scope specs below, then generate and send the proposal quote. If the lead goes cold, you can delete or archive the file."}
-                      {selectedJob.status === 'Quoted' && "Quote document sent. Awaiting explicit client confirmation approval to switch file into the queue."}
-                      {selectedJob.status === 'In Queue' && "Staged project in pipeline queue. Awaiting vehicle delivery drop-off matrix assignment to activate project floor work."}
-                      {selectedJob.status === 'Work Start' && "Active vehicle file. Track film usage parameters, installation labor, and record wrap notes."}
-                      {selectedJob.status === 'Install Complete' && "Wrap installation complete. Run billing compiler to post the invoice profile."}
-                      {selectedJob.status >= 'Invoiced' && "Financial billing view tracking stage."}
+                      {selectedJob.status === 'Lead' && "Review scope specs below, then generate and send the proposal quote."}
+                      {selectedJob.status === 'Quoted' && "Quote document sent. Awaiting client approval."}
+                      {selectedJob.status === 'In Queue' && "Staged project in pipeline queue."}
                     </p>
                   </div>
                   
-                  {/* WORKFLOW DISPATCH CONTROLLER ENGINE */}
                   <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto items-stretch sm:items-center md:items-end">
                     {selectedJob.status === 'Lead' && (
                       <>
