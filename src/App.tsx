@@ -5,7 +5,7 @@ import { usePlacesWidget } from "react-google-autocomplete";
 // --- MINI COMPONENT FOR GOOGLE MAPS ---
 const AddressInput = ({ formData, setFormData }: any) => {
   const { ref } = usePlacesWidget<HTMLInputElement>({
-    apiKey: "YOUR_GOOGLE_MAPS_API_KEY_HERE",
+    apiKey: "YAIzaSyDJygTGB49TR4hPg3lM_V-qMrBSQQbrs80",
     options: { types: ["address"], componentRestrictions: { country: "us" } },
     onPlaceSelected: (place: any) => {
       let street = '', city = '', state = '', zip = '';
@@ -45,7 +45,7 @@ const TAX_RATE = 0.065; // 6.5% Florida
 
 export default function App() {
   // --- STATE ---
-  const [currentView, setCurrentView] = useState('board'); // 'board' | 'intake' | 'inventory' | 'future-leads'
+  const [currentView, setCurrentView] = useState('board'); 
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
 
@@ -117,6 +117,16 @@ export default function App() {
     if (currentIndex !== -1 && currentIndex < workflowStages.length - 1) {
       const nextStatus = workflowStages[currentIndex + 1];
       await updateJobStatus(selectedJob.id, nextStatus);
+    }
+  };
+
+  // NEW UNDO STEPPER LOGIC
+  const handleRegressStatus = async () => {
+    if (!selectedJob) return;
+    const currentIndex = workflowStages.indexOf(selectedJob.status);
+    if (currentIndex > 0) {
+      const prevStatus = workflowStages[currentIndex - 1];
+      await updateJobStatus(selectedJob.id, prevStatus);
     }
   };
 
@@ -229,7 +239,6 @@ export default function App() {
   const taxAmount = subtotal * TAX_RATE;
   const grandTotal = subtotal + taxAmount;
 
-  // Split active pipeline vs future lead archive
   const activeJobs = jobs.filter(j => !j.archived);
   const futureLeads = jobs.filter(j => j.archived);
 
@@ -640,8 +649,16 @@ export default function App() {
               
               <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                  <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block">Current Stage</span>
-                  <span className="text-yellow-500 font-extrabold text-xl tracking-wide">{selectedJob.status}</span>
+                  <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block mb-1">Current Stage Override Menu</span>
+                  <select 
+                    value={selectedJob.status} 
+                    onChange={(e) => updateJobStatus(selectedJob.id, e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded p-1.5 font-bold text-yellow-500 outline-none text-sm focus:ring-1 focus:ring-yellow-500"
+                  >
+                    {workflowStages.map(stage => (
+                      <option key={stage} value={stage}>{stage}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="text-right">
                   <span className="text-xs uppercase text-zinc-500 tracking-wider font-bold block">Running Total</span>
@@ -690,16 +707,21 @@ export default function App() {
                         <button onClick={() => handleActionTrigger('approved')} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-black font-black py-2.5 px-4 rounded hover:from-emerald-500 shadow text-sm transition text-center">
                           ✅ Client Approved Project
                         </button>
-                        <button onClick={() => handleDeleteLead(selectedJob.id)} className="w-full text-center text-red-400/70 hover:text-red-400 text-xs pt-1 transition">
-                          Cancel & Wipe File
+                        <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition">
+                          ↩️ Undo (Move Back to Lead)
                         </button>
                       </>
                     )}
 
                     {selectedJob.status === 'In Queue' && (
-                      <button onClick={() => handleActionTrigger('ready_for_work')} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black py-3 px-6 rounded hover:from-yellow-500 shadow tracking-wider uppercase text-xs transition text-center">
-                        🚀 Ready for Work (Deploy to Bay)
-                      </button>
+                      <>
+                        <button onClick={() => handleActionTrigger('ready_for_work')} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black py-3 px-6 rounded hover:from-yellow-500 shadow tracking-wider uppercase text-xs transition text-center">
+                          🚀 Ready for Work (Deploy to Bay)
+                        </button>
+                        <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition">
+                          ↩️ Undo (Move Back to Quoted)
+                        </button>
+                      </>
                     )}
 
                     {selectedJob.status !== 'Lead' && selectedJob.status !== 'Quoted' && selectedJob.status !== 'In Queue' && selectedJob.status !== 'Delivered' && (
@@ -718,13 +740,21 @@ export default function App() {
                             <button onClick={handleAdvanceStatus} className="w-full bg-zinc-800 border border-zinc-700 text-white font-bold py-2.5 px-4 rounded hover:bg-zinc-700 shadow text-sm transition text-center block">
                               ➡️ Advance to Next Step
                             </button>
+                            <button onClick={handleRegressStatus} className="w-full text-center border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition block">
+                              ↩️ Move to Previous Step
+                            </button>
                           </>
                         )}
                       </div>
                     )}
 
                     {selectedJob.status === 'Delivered' && (
-                      <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2 px-4 rounded-full text-center">🎉 Closed / Fully Settled & Delivered</span>
+                      <div className="w-full text-center space-y-2">
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2 px-4 rounded-full block">🎉 Closed / Fully Settled & Delivered</span>
+                        <button onClick={handleRegressStatus} className="w-full border border-zinc-800 text-zinc-500 hover:text-white text-xs py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 transition block">
+                          ↩️ Reopen File (Move Back)
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
