@@ -5,7 +5,7 @@ import { usePlacesWidget } from "react-google-autocomplete";
 // --- MINI COMPONENT FOR GOOGLE MAPS ---
 const AddressInput = ({ formData, setFormData }: any) => {
   const { ref } = usePlacesWidget<HTMLInputElement>({
-    apiKey: "YOUAIzaSyDJygTGB49TR4hPg3lM_V-qMrBSQQbrs80",
+    apiKey: "YAIzaSyDJygTGB49TR4hPg3lM_V-qMrBSQQbrs80",
     options: { types: ["address"], componentRestrictions: { country: "us" } },
     onPlaceSelected: (place: any) => {
       let street = '', city = '', state = '', zip = '';
@@ -45,10 +45,11 @@ const TAX_RATE = 0.065; // 6.5% Florida
 
 export default function App() {
   // --- STATE ---
-  const [currentView, setCurrentView] = useState('board'); 
+  const [currentView, setCurrentView] = useState('board'); // 'board' | 'intake' | 'inventory' | 'crm-directory'
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [documentMode, setDocumentMode] = useState<'quote' | 'invoice' | null>(null); 
   const [fitToScreen, setFitToScreen] = useState(false);
+  const [crmSearchTerm, setCrmSearchTerm] = useState(''); // Search state for master CRM Directory
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -92,7 +93,7 @@ export default function App() {
   };
 
   const handleArchiveLead = async (jobId: number) => {
-    if(!confirm("Move this file out of the active flow and save as a Future CRM Lead?")) return;
+    if(!confirm("Move this file out of the active workflow board and tag as a Potential CRM Lead?")) return;
     setJobs(prev => prev.map(job => job.id === jobId ? { ...job, archived: true } : job));
     setSelectedJob(null);
     await supabase.from('jobs').update({ archived: true }).eq('id', jobId);
@@ -105,7 +106,7 @@ export default function App() {
   };
 
   const handleDeleteLead = async (jobId: number) => {
-    if(!confirm("CRITICAL WARNING: Are you sure you want to completely DELETE this lead file? This action is permanent and cannot be undone.")) return;
+    if(!confirm("CRITICAL WARNING: Are you sure you want to completely DELETE this client record? This action cannot be undone.")) return;
     setJobs(prev => prev.filter(job => job.id !== jobId));
     setSelectedJob(null);
     const { error } = await supabase.from('jobs').delete().eq('id', jobId);
@@ -225,7 +226,15 @@ export default function App() {
     }
   };
 
-  // --- UTILS ---
+  // --- CRM MATRIX FILTER UTILS ---
+  const activeJobs = jobs.filter(j => !j.archived);
+
+  // Search Filter algorithm for global CRM list
+  const filteredCrmRecords = jobs.filter(job => {
+    const searchString = `${job.customerName} ${job.phone} ${job.vehicleMake} ${job.vehicleModel} ${job.status}`.toLowerCase();
+    return searchString.includes(crmSearchTerm.toLowerCase());
+  });
+
   const currentMaterial = inventory.find(mat => mat.id === formData.selectedMaterialId);
   const liveMaterialCost = (parseFloat(formData.sqFt) || 0) * (currentMaterial ? parseFloat(currentMaterial.pricePerSqFt) : 0);
   const liveLaborCost = (parseFloat(formData.hours) || 0) * (parseFloat(formData.laborRate) || 0);
@@ -238,9 +247,6 @@ export default function App() {
   const subtotal = selectedJob ? (selectedJob.total || 0) : 0;
   const taxAmount = subtotal * TAX_RATE;
   const grandTotal = subtotal + taxAmount;
-
-  const activeJobs = jobs.filter(j => !j.archived);
-  const futureLeads = jobs.filter(j => j.archived);
 
   return (
     <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100 flex flex-col relative">
@@ -257,9 +263,9 @@ export default function App() {
             <button onClick={() => {setCurrentView('intake'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'intake' ? 'text-yellow-500' : 'text-zinc-400'}`}>+ New Intake</button>
             <button onClick={() => {setCurrentView('board'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'board' ? 'text-yellow-500' : 'text-zinc-400'}`}>Workflow Board</button>
             <button onClick={() => {setCurrentView('inventory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm ${currentView === 'inventory' ? 'text-yellow-500' : 'text-zinc-400'}`}>Inventory</button>
-            <button onClick={() => {setCurrentView('future-leads'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm relative ${currentView === 'future-leads' ? 'text-yellow-500' : 'text-zinc-400'}`}>
-              📁 Future Leads
-              {futureLeads.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-600 text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{futureLeads.length}</span>}
+            <button onClick={() => {setCurrentView('crm-directory'); setDocumentMode(null);}} className={`px-3 py-1.5 rounded-md font-semibold text-sm relative ${currentView === 'crm-directory' ? 'text-yellow-500' : 'text-zinc-400'}`}>
+              👥 Customer CRM Directory
+              {jobs.length > 0 && <span className="absolute -top-1 -right-2 bg-yellow-600 text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{jobs.length}</span>}
             </button>
           </div>
         </div>
@@ -349,12 +355,12 @@ export default function App() {
 
             <div className="mt-12 flex gap-4 print:hidden">
               <button onClick={() => window.print()} className="bg-zinc-900 text-white px-8 py-3 rounded font-bold hover:bg-black transition">🖨️ Print or Save PDF</button>
-              <button onClick={() => setDocumentMode(null)} className="border border-zinc-200 text-zinc-500 px-8 py-3 rounded font-bold hover:bg-zinc-50 transition">Back to Project Controls</button>
+              <button onClick={() => documentMode && setDocumentMode(null)} className="border border-zinc-200 text-zinc-500 px-8 py-3 rounded font-bold hover:bg-zinc-50 transition">Back to Project Controls</button>
             </div>
           </div>
         ) : (
           <>
-            {/* COMPACT WORKFLOW BOARD */}
+            {/* WORKFLOW BOARD */}
             {currentView === 'board' && (
                <div className="flex-grow flex flex-col h-full animate-fade-in">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
@@ -503,7 +509,7 @@ export default function App() {
                   </section>
 
                   <section className="bg-zinc-950 p-6 rounded-lg border border-zinc-800">
-                    <h2 className="text-xl font-semibold mb-4 border-b border-zinc-800 pb-2 text-yellow-500">3. Internal Estimation</h2>
+                    <h2 className="text-xl font-semibold mb-4 border-b border-zinc-700 pb-2 text-yellow-500">3. Internal Estimation</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                       <div>
                         <label className="block text-xs font-medium text-zinc-400 mb-1">Material Type</label>
@@ -592,51 +598,81 @@ export default function App() {
                </div>
             )}
 
-            {/* FUTURE LEADS REPOSITORY VIEW */}
-            {currentView === 'future-leads' && (
-              <div className="max-w-6xl mx-auto w-full animate-fade-in">
-                <div className="flex justify-between items-center mb-6">
+            {/* UNIFIED MASTER CRM CUSTOMER DIRECTORY VIEW */}
+            {currentView === 'crm-directory' && (
+              <div className="max-w-6xl mx-auto w-full animate-fade-in flex flex-col h-full">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                   <div>
-                    <h2 className="text-3xl font-bold text-white">Future CRM Leads Vault</h2>
-                    <p className="text-sm text-zinc-400 mt-1">Stored marketing contacts and cold proposal files outside the active production floor.</p>
+                    <h2 className="text-3xl font-bold text-white">Master Customer CRM Directory</h2>
+                    <p className="text-sm text-zinc-400 mt-1">Unified search index of every client file, contact parameter, and job file history.</p>
                   </div>
-                  <span className="bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 px-4 py-1.5 rounded-md font-mono text-sm font-bold">Total Staged: {futureLeads.length}</span>
+                  {/* LIVE CRM SEARCH BAR ENGINE */}
+                  <div className="w-full md:w-80 relative">
+                    <input 
+                      type="text"
+                      placeholder="🔍 Search name, phone, vehicle, status..."
+                      value={crmSearchTerm}
+                      onChange={(e) => setCrmSearchTerm(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-2 px-4 pl-10 text-white text-sm outline-none focus:border-yellow-500 transition"
+                    />
+                  </div>
                 </div>
 
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden shadow-2xl">
                   <table className="w-full text-left">
-                    <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase font-bold">
+                    <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase font-bold border-b border-zinc-800">
                       <tr>
                         <th className="p-4">Client Name</th>
-                        <th className="p-4">Contact Detail</th>
-                        <th className="p-4">Film Intent</th>
-                        <th className="p-4 text-right">Quote Value</th>
-                        <th className="p-4 text-center">Actions</th>
+                        <th className="p-4">Contact Details</th>
+                        <th className="p-4">Vehicle Specs</th>
+                        <th className="p-4 text-center">Lifecycle Status Flag</th>
+                        <th className="p-4 text-right">Job Running Value</th>
+                        <th className="p-4 text-center">Data Controls</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {futureLeads.length === 0 && (
-                        <tr><td colSpan={5} className="p-12 text-center text-zinc-500 italic">No archived future leads found. File them using the panel on active Leads.</td></tr>
+                      {filteredCrmRecords.length === 0 && (
+                        <tr><td colSpan={6} className="p-12 text-center text-zinc-500 italic">No matching client profiles located in the global database registry.</td></tr>
                       )}
-                      {futureLeads.map(lead => (
+                      {filteredCrmRecords.map(lead => (
                         <tr key={lead.id} className="border-t border-zinc-800/60 hover:bg-zinc-950/40 transition">
-                          <td className="p-4 font-bold text-white">{lead.customerName}</td>
+                          <td className="p-4 font-bold text-white">
+                            <button onClick={() => setSelectedJob(lead)} className="hover:text-yellow-500 text-left transition outline-none">
+                              {lead.customerName}
+                            </button>
+                          </td>
                           <td className="p-4 text-zinc-400">
-                            <div className="text-xs">{lead.phone}</div>
-                            <div className="text-[11px] text-zinc-500 mt-0.5">{lead.email || 'No email log'}</div>
+                            <div className="text-xs font-medium font-mono">{lead.phone}</div>
+                            <div className="text-[11px] text-zinc-500 mt-0.5 truncate max-w-[180px]">{lead.email || 'No email logged'}</div>
                           </td>
                           <td className="p-4">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{lead.vehicleYear} {lead.vehicleMake}</span>
-                            <div className="text-[10px] bg-zinc-800 border border-zinc-700/50 text-zinc-400 px-1.5 py-0.5 rounded w-max mt-1 uppercase font-bold">{lead.jobType}</div>
+                            <div className="text-xs font-semibold text-zinc-300">{lead.vehicleYear} {lead.vehicleMake} {lead.vehicleModel}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">{lead.jobType} ({lead.location})</div>
                           </td>
-                          <td className="p-4 text-right font-bold text-emerald-400">${lead.total?.toFixed(2)}</td>
+                          <td className="p-4 text-center">
+                            {/* DYNAMIC PIPELINE STATUS BADGING ENGINE */}
+                            {lead.archived ? (
+                              <span className="text-[10px] font-black bg-purple-950/40 border border-purple-800/60 text-purple-400 py-1 px-2.5 rounded-full uppercase tracking-tight">📁 Potential Lead</span>
+                            ) : lead.status === 'Delivered' ? (
+                              <span className="text-[10px] font-black bg-emerald-950/50 border border-emerald-800/60 text-emerald-400 py-1 px-2.5 rounded-full uppercase tracking-tight">🎉 Past Customer</span>
+                            ) : (
+                              <span className="text-[10px] font-black bg-blue-950/50 border border-blue-800/60 text-blue-400 py-1 px-2.5 rounded-full uppercase tracking-tight">⚡ Active Board: {lead.status}</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right font-black text-zinc-300 font-mono">${lead.total?.toFixed(2)}</td>
                           <td className="p-4">
                             <div className="flex gap-2 justify-center">
-                              <button onClick={() => handleUnarchiveLead(lead.id)} className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white text-xs px-3 py-1 rounded font-medium transition">
-                                🔄 Restore to Board
-                              </button>
-                              <button onClick={() => handleDeleteLead(lead.id)} className="bg-red-950/40 border border-red-900/60 hover:bg-red-900 text-red-200 text-xs px-3 py-1 rounded font-medium transition">
-                                🗑️ Wipe File
+                              {lead.archived ? (
+                                <button onClick={() => handleUnarchiveLead(lead.id)} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white text-[11px] px-2.5 py-1 rounded transition font-medium">
+                                  🔄 Restore Board
+                                </button>
+                              ) : (
+                                <button onClick={() => handleArchiveLead(lead.id)} className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 text-[11px] px-2.5 py-1 rounded transition font-medium">
+                                  📁 Archive Lead
+                                </button>
+                              )}
+                              <button onClick={() => handleDeleteLead(lead.id)} className="bg-red-950/20 border border-red-900/40 hover:bg-red-900 text-red-300 text-[11px] px-2.5 py-1 rounded transition font-medium">
+                                🗑️ Wipe
                               </button>
                             </div>
                           </td>
